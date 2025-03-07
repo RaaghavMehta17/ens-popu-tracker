@@ -1,86 +1,52 @@
-import {
-  ApprovalForAll as ApprovalForAllEvent,
-  NewOwner as NewOwnerEvent,
-  NewResolver as NewResolverEvent,
-  NewTTL as NewTTLEvent,
-  Transfer as TransferEvent
-} from "../generated/ENSRegistryWithFallback/ENSRegistryWithFallback"
-import {
-  ApprovalForAll,
-  NewOwner,
-  NewResolver,
-  NewTTL,
-  Transfer
-} from "../generated/schema"
+import { Bytes, BigInt } from "@graphprotocol/graph-ts";
+import { ENSDomain, Ownership } from "../generated/schema";
+import { NewOwner, Transfer } from "../generated/ENSRegistryWithFallback/ENSRegistryWithFallback";
 
-export function handleApprovalForAll(event: ApprovalForAllEvent): void {
-  let entity = new ApprovalForAll(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.owner = event.params.owner
-  entity.operator = event.params.operator
-  entity.approved = event.params.approved
+export function handleTransfer(event: Transfer): void {
+  let domainId = event.params.node.toHexString();
+  let domain = ENSDomain.load(domainId);
 
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
+  if (!domain) {
+    domain = new ENSDomain(domainId);
+    domain.registrationDate = event.block.timestamp;
+    domain.totalTransfers = 0;
+    domain.owner = Bytes.empty();
+    domain.expiryDate = BigInt.zero(); 
+  }
 
-  entity.save()
+  if (domain.owner != event.params.owner) {
+    let ownership = new Ownership(event.transaction.hash.toHex() + "-" + event.logIndex.toString());
+    ownership.domain = domain.id;
+    ownership.owner = event.params.owner;
+    ownership.transferDate = event.block.timestamp;
+    ownership.save();
+
+    domain.owner = event.params.owner;
+    domain.totalTransfers = domain.totalTransfers + 1;
+    domain.save();
+  }
 }
 
-export function handleNewOwner(event: NewOwnerEvent): void {
-  let entity = new NewOwner(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.node = event.params.node
-  entity.label = event.params.label
-  entity.owner = event.params.owner
+export function handleNewOwner(event: NewOwner): void {
+  let domainId = event.params.node.toHexString();
+  let domain = ENSDomain.load(domainId);
 
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
+  if (!domain) {
+    domain = new ENSDomain(domainId);
+    domain.registrationDate = event.block.timestamp;
+    domain.totalTransfers = 0;
+    domain.owner = Bytes.empty();
+    domain.expiryDate = BigInt.zero();
+  }
 
-  entity.save()
-}
+  if (domain.owner != event.params.owner) {
+    let ownership = new Ownership(event.transaction.hash.toHex() + "-" + event.logIndex.toString());
+    ownership.domain = domain.id;
+    ownership.owner = event.params.owner;
+    ownership.transferDate = event.block.timestamp;
+    ownership.save();
 
-export function handleNewResolver(event: NewResolverEvent): void {
-  let entity = new NewResolver(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.node = event.params.node
-  entity.resolver = event.params.resolver
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleNewTTL(event: NewTTLEvent): void {
-  let entity = new NewTTL(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.node = event.params.node
-  entity.ttl = event.params.ttl
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleTransfer(event: TransferEvent): void {
-  let entity = new Transfer(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.node = event.params.node
-  entity.owner = event.params.owner
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+    domain.owner = event.params.owner;
+    domain.save();
+  }
 }
