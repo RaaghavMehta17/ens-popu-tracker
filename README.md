@@ -50,20 +50,19 @@ Ensure you have Node.js and Yarn installed. Then, run:
 3.**Generate and Build the Subgraph:**
 
    ```bash
-   yarn codegen
-   yarn build
+   graph codegen && graph build
    ```
 
 4.**Authenticate with the Graph:**
 
    ```bash
-   graph auth --studio <YOUR_GRAPH_ACCESS_TOKEN>
+   graph auth <YOUR_GRAPH_ACCESS_TOKEN>
    ```
 
 5.**Deploy the Subgraph:**
 
    ```bash
-   graph deploy --studio <SUBGRAPH_NAME>
+   graph deploy ens-popu-tracker
    ```
 
 
